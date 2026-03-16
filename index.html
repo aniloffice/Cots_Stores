@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StoreVault — Inventory Management</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d12;--surf:#161620;--surf2:#1e1e2e;--surf3:#262638;
+  --bdr:#2e2e44;--acc:#f59e0b;--acc2:#fbbf24;--grn:#10b981;
+  --red:#ef4444;--blu:#3b82f6;--orn:#f97316;--pur:#8b5cf6;
+  --txt:#e2e2f0;--tx2:#8888aa;--tx3:#4a4a6a;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;
+  --r:8px;--t:.16s ease;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);font-size:14px;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:4px;}
+
+/* ═══ LOGIN PAGE ═══ */
+#loginPage{
+  display:flex;align-items:center;justify-content:center;
+  height:100vh;
+  background:radial-gradient(ellipse at 30% 60%,rgba(245,158,11,.08) 0%,transparent 55%),
+             radial-gradient(ellipse at 75% 20%,rgba(139,92,246,.06) 0%,transparent 45%),
+             var(--bg);
+}
+.lcard{
+  width:460px;background:var(--surf);border:1px solid var(--bdr);
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 24px 60px rgba(0,0,0,.5);
+}
+.lcard-top{
+  padding:32px 36px 28px;
+  border-bottom:1px solid var(--bdr);
+}
+.lbrand{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+.lbrand-icon{
+  width:46px;height:46px;background:var(--acc);border-radius:12px;
+  display:grid;place-items:center;font-size:22px;flex-shrink:0;
+}
+.lbrand-name{font-family:var(--mono);font-weight:700;font-size:20px;line-height:1.2;}
+.lbrand-name small{display:block;font-size:11px;color:var(--tx2);font-weight:400;margin-top:2px;}
+
+/* Role tabs */
+.role-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:24px;}
+.rtab{
+  padding:12px;border-radius:10px;border:1px solid var(--bdr);
+  cursor:pointer;text-align:center;transition:all var(--t);background:var(--surf2);
+}
+.rtab:hover{border-color:var(--tx2);}
+.rtab.active{border-color:var(--acc);background:rgba(245,158,11,.08);}
+.rtab-icon{font-size:22px;margin-bottom:4px;}
+.rtab-label{font-size:13px;font-weight:600;}
+.rtab-desc{font-size:11px;color:var(--tx2);margin-top:2px;}
+.rtab.active .rtab-label{color:var(--acc);}
+
+/* Admin selector */
+.admin-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;}
+.acard{
+  padding:10px 8px;border-radius:8px;border:1px solid var(--bdr);
+  cursor:pointer;text-align:center;transition:all var(--t);background:var(--surf2);
+}
+.acard:hover{border-color:var(--tx2);}
+.acard.active{border-color:var(--acc);background:rgba(245,158,11,.08);}
+.acard-av{
+  width:36px;height:36px;border-radius:50%;margin:0 auto 6px;
+  display:grid;place-items:center;font-size:14px;font-weight:700;font-family:var(--mono);
+}
+.acard-name{font-size:11px;font-weight:600;line-height:1.3;}
+.acard.active .acard-name{color:var(--acc);}
+
+.lfield{margin-bottom:16px;}
+.lfield label{
+  display:block;font-size:11px;font-weight:600;color:var(--tx2);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:7px;
+}
+.lfield input{
+  width:100%;padding:11px 14px;background:var(--surf2);
+  border:1px solid var(--bdr);border-radius:var(--r);
+  color:var(--txt);font-family:var(--sans);font-size:14px;outline:none;
+  transition:border-color var(--t);
+}
+.lfield input:focus{border-color:var(--acc);}
+.btn-signin{
+  width:100%;padding:13px;background:var(--acc);color:#000;border:none;
+  border-radius:var(--r);font-weight:600;font-size:14px;cursor:pointer;
+  font-family:var(--sans);transition:opacity var(--t);
+}
+.btn-signin:hover{opacity:.88;}
+.lerr{
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  color:var(--red);border-radius:var(--r);padding:10px 14px;
+  font-size:13px;margin-top:12px;display:none;
+}
+
+/* viewer panel */
+#viewerPanel{padding:0 36px 28px;}
+.viewer-info{
+  background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);
+  border-radius:10px;padding:14px 16px;margin-bottom:18px;
+  font-size:13px;color:var(--tx2);line-height:1.7;
+}
+.viewer-info strong{color:var(--blu);}
+
+/* ═══ APP ═══ */
+#appPage{display:none;height:100vh;flex-direction:column;}
+.topbar{
+  height:54px;background:var(--surf);border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;padding:0 18px;gap:14px;flex-shrink:0;z-index:100;
+}
+.topbar-brand{font-family:var(--mono);font-weight:700;font-size:16px;
+  display:flex;align-items:center;gap:8px;}
+.topbar-brand-icon{width:28px;height:28px;background:var(--acc);border-radius:7px;
+  display:grid;place-items:center;font-size:13px;}
+.tsep{width:1px;height:22px;background:var(--bdr);}
+.tright{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.tuser{display:flex;align-items:center;gap:8px;}
+.tubadge{
+  padding:3px 9px;border-radius:20px;font-family:var(--mono);
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+}
+.ba{background:rgba(245,158,11,.15);color:var(--acc);border:1px solid rgba(245,158,11,.25);}
+.bv{background:rgba(59,130,246,.12);color:var(--blu);border:1px solid rgba(59,130,246,.2);}
+.tuname{font-weight:600;font-size:13px;}
+.tbtn{
+  padding:5px 12px;background:var(--surf2);border:1px solid var(--bdr);
+  color:var(--tx2);border-radius:6px;cursor:pointer;font-size:12px;
+  font-family:var(--sans);transition:all var(--t);
+}
+.tbtn:hover{border-color:var(--red);color:var(--red);}
+.sync-badge{
+  display:flex;align-items:center;gap:6px;font-size:11px;font-family:var(--mono);
+  padding:4px 10px;background:var(--surf2);border:1px solid var(--bdr);
+  border-radius:6px;cursor:pointer;transition:all var(--t);
+}
+.sync-badge:hover{border-color:var(--tx2);}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--tx3);}
+.sdot.on{background:var(--grn);box-shadow:0 0 6px var(--grn);}
+
+/* BODY */
+.app-body{display:flex;flex:1;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{
+  width:220px;background:var(--surf);border-right:1px solid var(--bdr);
+  display:flex;flex-direction:column;flex-shrink:0;
+}
+.sb-label{
+  padding:14px 14px 6px;font-family:var(--mono);font-size:10px;
+  font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.1em;
+}
+.sb-list{flex:1;overflow-y:auto;padding:4px 8px;}
+.ti{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:7px;cursor:pointer;transition:all var(--t);
+  border:1px solid transparent;margin-bottom:2px;
+}
+.ti:hover{background:var(--surf2);}
+.ti.active{background:rgba(245,158,11,.09);border-color:rgba(245,158,11,.22);}
+.ti-icon{font-size:15px;flex-shrink:0;}
+.ti-name{font-size:12px;font-weight:500;flex:1;line-height:1.3;}
+.ti.active .ti-name{color:var(--acc);}
+.ti-cnt{
+  font-family:var(--mono);font-size:10px;color:var(--tx3);
+  background:var(--surf3);padding:2px 6px;border-radius:8px;flex-shrink:0;
+}
+.sb-bottom{padding:10px 8px;border-top:1px solid var(--bdr);}
+.btn-newtable{
+  width:100%;padding:8px;background:var(--surf2);border:1px dashed var(--bdr);
+  color:var(--tx2);border-radius:6px;cursor:pointer;font-size:12px;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  transition:all var(--t);font-family:var(--sans);
+}
+.btn-newtable:hover{border-color:var(--acc);color:var(--acc);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.mhead{
+  padding:14px 20px;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--surf);
+}
+.mhead-left h1{font-size:17px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.mhead-left .msub{font-size:11px;color:var(--tx2);font-family:var(--mono);margin-top:2px;}
+.mhead-right{display:flex;align-items:center;gap:7px;margin-left:auto;flex-wrap:wrap;}
+
+/* BUTTONS */
+.btn{
+  padding:6px 13px;border-radius:6px;font-family:var(--sans);font-size:12px;
+  font-weight:500;cursor:pointer;border:1px solid;display:inline-flex;
+  align-items:center;gap:5px;white-space:nowrap;transition:all var(--t);
+}
+.btn-p{background:var(--acc);color:#000;border-color:var(--acc);}
+.btn-p:hover{background:var(--acc2);}
+.btn-o{background:transparent;color:var(--tx2);border-color:var(--bdr);}
+.btn-o:hover{border-color:var(--tx2);color:var(--txt);}
+.btn-r{background:transparent;color:var(--red);border-color:rgba(239,68,68,.3);}
+.btn-r:hover{background:rgba(239,68,68,.07);}
+.btn-g{background:var(--grn);color:#000;border-color:var(--grn);}
+.btn-g:hover{opacity:.85;}
+
+/* STATS */
+.statsbar{
+  padding:7px 20px;border-bottom:1px solid var(--bdr);
+  display:flex;gap:18px;align-items:center;background:var(--bg);flex-shrink:0;
+}
+.stat{display:flex;align-items:center;gap:5px;font-size:12px;}
+.stat-dot{width:7px;height:7px;border-radius:50%;}
+.stat-n{font-family:var(--mono);font-weight:600;font-size:13px;}
+.stat-l{color:var(--tx3);}
+
+/* TOOLBAR */
+.toolbar{
+  padding:8px 20px;border-bottom:1px solid var(--bdr);
+  display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap;background:var(--bg);
+}
+.sbox{
+  display:flex;align-items:center;gap:7px;background:var(--surf);
+  border:1px solid var(--bdr);border-radius:6px;padding:6px 11px;flex:0 0 220px;
+}
+.sbox input{
+  background:none;border:none;outline:none;color:var(--txt);
+  font-family:var(--sans);font-size:13px;width:100%;
+}
+.sbox input::placeholder{color:var(--tx3);}
+.pills{display:flex;gap:5px;flex-wrap:wrap;}
+.pill{
+  padding:4px 10px;border-radius:20px;font-size:11px;font-weight:500;
+  cursor:pointer;border:1px solid var(--bdr);background:var(--surf);
+  color:var(--tx2);transition:all var(--t);
+}
+.pill.pa{border-color:var(--tx2);color:var(--txt);}
+.pill.pi{border-color:var(--grn);color:var(--grn);background:rgba(16,185,129,.07);}
+.pill.po{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.07);}
+.pill.pl{border-color:var(--orn);color:var(--orn);background:rgba(249,115,22,.07);}
+
+/* TABLE */
+.twrap{flex:1;overflow:auto;}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  padding:9px 12px;text-align:left;font-family:var(--mono);font-size:10px;
+  font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;
+  background:var(--surf);border-bottom:1px solid var(--bdr);
+  position:sticky;top:0;z-index:5;white-space:nowrap;
+}
+thead th:first-child{width:40px;text-align:center;}
+tbody tr{border-bottom:1px solid var(--bdr);transition:background var(--t);}
+tbody tr:hover{background:rgba(255,255,255,.025);}
+tbody td{padding:9px 12px;font-size:13px;vertical-align:middle;}
+tbody td:first-child{text-align:center;}
+.rn{font-family:var(--mono);font-size:10px;color:var(--tx3);}
+.acts{display:flex;gap:5px;justify-content:flex-end;}
+.abt{
+  width:27px;height:27px;border-radius:5px;border:1px solid var(--bdr);
+  background:var(--surf);cursor:pointer;display:grid;place-items:center;
+  font-size:12px;transition:all var(--t);color:var(--tx2);
+}
+.abt.e:hover{border-color:var(--acc);color:var(--acc);background:rgba(245,158,11,.07);}
+.abt.d:hover{border-color:var(--red);color:var(--red);background:rgba(239,68,68,.07);}
+
+/* STATUS & CONDITION BADGES */
+.sbadge{
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
+  border-radius:20px;font-size:11px;font-weight:600;font-family:var(--mono);
+  white-space:nowrap;
+}
+.sb-in{background:rgba(16,185,129,.12);color:var(--grn);border:1px solid rgba(16,185,129,.22);}
+.sb-out{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.22);}
+.sb-low{background:rgba(249,115,22,.12);color:var(--orn);border:1px solid rgba(249,115,22,.22);}
+.sb-good{background:rgba(16,185,129,.1);color:var(--grn);border:1px solid rgba(16,185,129,.2);}
+.sb-fair{background:rgba(245,158,11,.1);color:var(--acc);border:1px solid rgba(245,158,11,.2);}
+.sb-poor{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.sb-ok{background:rgba(139,92,246,.1);color:var(--pur);border:1px solid rgba(139,92,246,.2);}
+.sdotb{width:4px;height:4px;border-radius:50%;background:currentColor;}
+.ct{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* EMPTY STATE */
+.empty{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:70px 20px;color:var(--tx3);gap:10px;
+}
+.empty-icon{font-size:44px;opacity:.35;}
+.empty h3{font-size:15px;color:var(--tx2);}
+.empty p{font-size:12px;text-align:center;max-width:260px;line-height:1.6;}
+
+/* VIEWER NOTICE */
+.vnotice{
+  background:rgba(59,130,246,.06);border-bottom:1px solid rgba(59,130,246,.15);
+  padding:8px 20px;font-size:12px;color:var(--blu);
+  display:none;align-items:center;gap:7px;flex-shrink:0;
+}
+
+/* ═══ MODALS ═══ */
+.mover{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;
+  align-items:center;justify-content:center;z-index:1000;backdrop-filter:blur(4px);
+}
+.mover.open{display:flex;}
+.modal{
+  background:var(--surf);border:1px solid var(--bdr);border-radius:12px;
+  padding:26px;width:520px;max-width:95vw;max-height:92vh;overflow-y:auto;
+  animation:mIn .16s ease;
+}
+.mlg{width:660px;} .msm{width:380px;}
+@keyframes mIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.mt{font-size:16px;font-weight:700;}
+.mcl{
+  width:30px;height:30px;border:1px solid var(--bdr);background:var(--surf2);
+  border-radius:6px;cursor:pointer;display:grid;place-items:center;
+  font-size:14px;color:var(--tx2);transition:all var(--t);
+}
+.mcl:hover{border-color:var(--red);color:var(--red);}
+.ff{margin-bottom:14px;}
+.ff label{
+  display:block;font-size:11px;font-weight:600;color:var(--tx2);
+  text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;
+}
+.ff input,.ff select,.ff textarea{
+  width:100%;padding:9px 12px;background:var(--surf2);border:1px solid var(--bdr);
+  border-radius:6px;color:var(--txt);font-family:var(--sans);font-size:13px;
+  outline:none;transition:border-color var(--t);
+}
+.ff input:focus,.ff select:focus,.ff textarea:focus{border-color:var(--acc);}
+.ff select option{background:var(--surf2);}
+.ff textarea{resize:vertical;min-height:70px;line-height:1.5;}
+.mft{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+.fgrid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.fgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.fhint{font-size:11px;color:var(--tx3);margin-top:4px;}
+.fhint code{color:var(--acc2);font-family:var(--mono);}
+
+/* COL LIST */
+.clist{border:1px solid var(--bdr);border-radius:6px;overflow:hidden;
+  margin-bottom:10px;max-height:220px;overflow-y:auto;}
+.ci{display:flex;align-items:center;gap:8px;padding:8px 11px;
+  border-bottom:1px solid var(--bdr);background:var(--surf2);}
+.ci:last-child{border-bottom:none;}
+.ci-name{flex:1;font-size:13px;}
+.ci-type{font-family:var(--mono);font-size:10px;color:var(--tx3);
+  padding:2px 7px;background:var(--surf3);border-radius:4px;}
+.cdel{border:none;background:none;cursor:pointer;color:var(--tx3);font-size:13px;
+  padding:3px;border-radius:4px;transition:all var(--t);}
+.cdel:hover{color:var(--red);background:rgba(239,68,68,.1);}
+
+/* SYNC MODAL */
+.step-card{background:var(--bg);border:1px solid var(--bdr);border-radius:8px;padding:14px;margin-bottom:12px;}
+.step-hd{display:flex;align-items:center;gap:9px;margin-bottom:9px;}
+.step-n{
+  width:24px;height:24px;border-radius:50%;background:var(--acc);color:#000;
+  font-weight:700;font-size:11px;display:grid;place-items:center;
+  flex-shrink:0;font-family:var(--mono);
+}
+.step-t{font-weight:600;font-size:13px;}
+.step-d{font-size:12px;color:var(--tx2);line-height:1.75;}
+.step-d strong{color:var(--txt);}
+.sbtngrp{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px;}
+
+/* TOAST */
+#toasts{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px;}
+.toast{
+  padding:11px 16px;border-radius:8px;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:7px;min-width:220px;max-width:340px;
+  animation:tIn .18s ease;border:1px solid;box-shadow:0 4px 18px rgba(0,0,0,.45);
+}
+@keyframes tIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+.ts{background:#0d2b1f;border-color:rgba(16,185,129,.3);color:var(--grn);}
+.te{background:#2b0d0d;border-color:rgba(239,68,68,.3);color:var(--red);}
+.ti{background:#0d1a2b;border-color:rgba(59,130,246,.3);color:var(--blu);}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOGIN ═══════════════════════════════════════════════════════ -->
+<div id="loginPage">
+  <div class="lcard">
+    <div class="lcard-top">
+      <div class="lbrand">
+        <div class="lbrand-icon">🏪</div>
+        <div class="lbrand-name">
+          StoreVault
+          <small>Inventory Management System</small>
+        </div>
+      </div>
+
+      <!-- Role Tabs -->
+      <div class="role-tabs">
+        <div class="rtab active" id="rtab-admin" onclick="switchRole('admin')">
+          <div class="rtab-icon">🔐</div>
+          <div class="rtab-label">Admin</div>
+          <div class="rtab-desc">Full access</div>
+        </div>
+        <div class="rtab" id="rtab-viewer" onclick="switchRole('viewer')">
+          <div class="rtab-icon">👁</div>
+          <div class="rtab-label">Viewer</div>
+          <div class="rtab-desc">View only</div>
+        </div>
+      </div>
+
+      <!-- ADMIN PANEL -->
+      <div id="adminPanel">
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;">Select Admin</div>
+        <div class="admin-cards">
+          <!-- ⚠ ADMIN 1: username=admin_raj | password=Raj@Store#2024 -->
+          <div class="acard active" id="ac-0" onclick="pickAdmin(0)">
+            <div class="acard-av" style="background:rgba(245,158,11,.2);color:var(--acc)">RK</div>
+            <div class="acard-name">Raj<br>Kumar</div>
+          </div>
+          <!-- ⚠ ADMIN 2: username=admin_priya | password=Priya@Store#2024 -->
+          <div class="acard" id="ac-1" onclick="pickAdmin(1)">
+            <div class="acard-av" style="background:rgba(16,185,129,.2);color:var(--grn)">PS</div>
+            <div class="acard-name">Priya<br>Sharma</div>
+          </div>
+          <!-- ⚠ ADMIN 3: username=admin_vikram | password=Vikram@Store#2024 -->
+          <div class="acard" id="ac-2" onclick="pickAdmin(2)">
+            <div class="acard-av" style="background:rgba(139,92,246,.2);color:var(--pur)">VS</div>
+            <div class="acard-name">Vikram<br>Singh</div>
+          </div>
+        </div>
+        <div class="lfield">
+          <label>Password</label>
+          <input type="password" id="adminPass" placeholder="Enter your password"
+            onkeydown="if(event.key==='Enter')doLogin()">
+        </div>
+        <button class="btn-signin" onclick="doLogin()">Sign In →</button>
+        <div class="lerr" id="loginErr">❌ Incorrect password. Try again.</div>
+      </div>
+    </div><!-- /lcard-top -->
+
+    <!-- VIEWER PANEL -->
+    <div id="viewerPanel" style="padding:24px 36px 28px;display:none;">
+      <div class="viewer-info">
+        <strong>👁 Viewer Access</strong><br>
+        You can browse all inventory tables, filter by stock status, and search products.
+        No changes can be made.
+      </div>
+      <div class="lfield">
+        <label>Password</label>
+        <!-- ⚠ VIEWER: username=viewer | password=view@2024 -->
+        <input type="password" id="viewerPass" placeholder="Enter viewer password"
+          onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="btn-signin" onclick="doLogin()">Enter →</button>
+      <div class="lerr" id="loginErrV">❌ Incorrect password.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ APP ══════════════════════════════════════════════════════════ -->
+<div id="appPage">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-brand-icon">🏪</div>
+      <span>Store<span style="color:var(--acc)">Vault</span></span>
+    </div>
+    <div class="tsep"></div>
+    <span style="font-size:11px;color:var(--tx3);font-family:var(--mono)">Inventory System</span>
+    <div class="tright">
+      <div class="sync-badge" id="syncBadge" onclick="openSyncModal()" title="Google Sheets Sync">
+        <span class="sdot" id="sdot"></span>
+        <span id="stxt">Sheets: Not set up</span>
+      </div>
+      <div class="tuser">
+        <span class="tuname" id="tuname"></span>
+        <span class="tubadge" id="tubadge"></span>
+      </div>
+      <button class="tbtn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sb-label">Tables</div>
+      <div class="sb-list" id="sidebarList"></div>
+      <div class="sb-bottom">
+        <button class="btn-newtable" id="btnNewTable" onclick="openAddTableModal()" style="display:none;">
+          + New Table
+        </button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main">
+      <div class="mhead">
+        <div class="mhead-left">
+          <h1><span id="atIcon">📦</span><span id="atName">Select a Table</span></h1>
+          <div class="msub" id="atSub"></div>
+        </div>
+        <div class="mhead-right" id="adminActs" style="display:none;">
+          <button class="btn btn-o" onclick="openManageCols()">⚙ Columns</button>
+          <button class="btn btn-o" onclick="openRenameModal()">✏ Rename</button>
+          <button class="btn btn-r" onclick="deleteActiveTable()">🗑</button>
+          <button class="btn btn-o" onclick="exportCSV()">⬇ CSV</button>
+          <button class="btn btn-g" onclick="quickSync()">☁ Sync</button>
+          <button class="btn btn-p" onclick="openAddRow()">+ Add Row</button>
+        </div>
+        <div class="mhead-right" id="viewerActs" style="display:none;">
+          <span style="font-size:12px;color:var(--tx2)">👁 View only</span>
+        </div>
+      </div>
+
+      <div class="vnotice" id="vnotice">
+        👁 Viewer mode — You can browse and filter, but cannot make any changes.
+      </div>
+
+      <div class="statsbar" id="statsbar" style="display:none;">
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--tx2)"></div>
+          <span class="stat-n" id="stTotal">0</span><span class="stat-l">Total</span>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--grn)"></div>
+          <span class="stat-n" id="stIn">0</span><span class="stat-l">In Stock</span>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--orn)"></div>
+          <span class="stat-n" id="stLow">0</span><span class="stat-l">Low Stock</span>
+        </div>
+        <div class="stat">
+          <div class="stat-dot" style="background:var(--red)"></div>
+          <span class="stat-n" id="stOut">0</span><span class="stat-l">Out of Stock</span>
+        </div>
+      </div>
+
+      <div class="toolbar" id="toolbar" style="display:none;">
+        <div class="sbox">
+          <span style="color:var(--tx3);font-size:13px;">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search…" oninput="renderTable()">
+        </div>
+        <div class="pills" id="filterPills" style="display:none;">
+          <span class="pill pa" onclick="setFilter('all',this)">All</span>
+          <span class="pill" onclick="setFilter('In Stock',this)">✅ In Stock</span>
+          <span class="pill" onclick="setFilter('Low Stock',this)">⚠ Low</span>
+          <span class="pill" onclick="setFilter('Out of Stock',this)">❌ Out</span>
+        </div>
+      </div>
+
+      <div class="twrap" id="tableWrap">
+        <div class="empty">
+          <div class="empty-icon">🏪</div>
+          <h3>Welcome to StoreVault</h3>
+          <p>Select a table from the sidebar to view data.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add/Edit Row -->
+<div class="mover" id="rowModal">
+  <div class="modal mlg">
+    <div class="mhd">
+      <div class="mt" id="rowMT">Add Row</div>
+      <button class="mcl" onclick="CM('rowModal')">✕</button>
+    </div>
+    <div id="rowFields"></div>
+    <div class="mft">
+      <button class="btn btn-o" onclick="CM('rowModal')">Cancel</button>
+      <button class="btn btn-p" onclick="saveRow()" id="saveRowBtn">Save Row</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Add Table -->
+<div class="mover" id="addTableModal">
+  <div class="modal msm">
+    <div class="mhd">
+      <div class="mt">New Table</div>
+      <button class="mcl" onclick="CM('addTableModal')">✕</button>
+    </div>
+    <div class="ff">
+      <label>Table Name</label>
+      <input type="text" id="ntName" placeholder="e.g. Electronics…"
+        onkeydown="if(event.key==='Enter')createTable()">
+    </div>
+    <div class="ff">
+      <label>Icon (Emoji)</label>
+      <input type="text" id="ntIcon" maxlength="2" value="📦">
+    </div>
+    <div class="mft">
+      <button class="btn btn-o" onclick="CM('addTableModal')">Cancel</button>
+      <button class="btn btn-p" onclick="createTable()">Create</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Rename Table -->
+<div class="mover" id="renameModal">
+  <div class="modal msm">
+    <div class="mhd">
+      <div class="mt">Rename Table</div>
+      <button class="mcl" onclick="CM('renameModal')">✕</button>
+    </div>
+    <div class="ff">
+      <label>Name</label>
+      <input type="text" id="rnName" onkeydown="if(event.key==='Enter')doRenameTable()">
+    </div>
+    <div class="ff">
+      <label>Icon</label>
+      <input type="text" id="rnIcon" maxlength="2">
+    </div>
+    <div class="mft">
+      <button class="btn btn-o" onclick="CM('renameModal')">Cancel</button>
+      <button class="btn btn-p" onclick="doRenameTable()">Rename</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Manage Columns -->
+<div class="mover" id="colsModal">
+  <div class="modal">
+    <div class="mhd">
+      <div class="mt">⚙ Manage Columns</div>
+      <button class="mcl" onclick="CM('colsModal')">✕</button>
+    </div>
+    <div class="clist" id="colList"></div>
+    <div style="background:var(--surf2);border:1px solid var(--bdr);border-radius:7px;padding:13px;">
+      <div style="font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:10px;">Add Column</div>
+      <div class="fgrid2">
+        <div class="ff" style="margin:0">
+          <label>Name</label>
+          <input type="text" id="ncName" placeholder="Column name…">
+        </div>
+        <div class="ff" style="margin:0">
+          <label>Type</label>
+          <select id="ncType">
+            <option value="text">Text</option>
+            <option value="number">Number</option>
+            <option value="date">Date</option>
+            <option value="condition">Condition (Good/Fair/Poor)</option>
+            <option value="status">Stock Status</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-p" style="margin-top:10px;font-size:12px;padding:6px 12px;" onclick="addCol()">+ Add</button>
+    </div>
+    <div class="mft">
+      <button class="btn btn-p" onclick="CM('colsModal');renderTable()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Google Sheets Sync -->
+<div class="mover" id="syncModal">
+  <div class="modal mlg">
+    <div class="mhd">
+      <div class="mt">☁ Google Sheets Sync</div>
+      <button class="mcl" onclick="CM('syncModal')">✕</button>
+    </div>
+
+    <div class="step-card">
+      <div class="step-hd"><div class="step-n">1</div>
+        <div class="step-t">Add the Apps Script to your Google Sheet</div></div>
+      <div class="step-d">
+        Open your Sheet → <strong>Extensions → Apps Script</strong><br>
+        Delete existing code → paste the script → click 💾 Save
+      </div>
+      <div class="sbtngrp">
+        <button class="btn btn-o" style="background:rgba(59,130,246,.1);border-color:var(--blu);color:var(--blu);" onclick="downloadGS()">⬇ Download apps-script.gs</button>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-hd"><div class="step-n">2</div>
+        <div class="step-t">Deploy → New Deployment → Web App</div></div>
+      <div class="step-d">
+        • Execute as: <strong>Me</strong><br>
+        • Who has access: <strong>Anyone</strong><br>
+        Click Deploy → authorize → copy the Web App URL
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-hd"><div class="step-n">3</div>
+        <div class="step-t">Paste Web App URL & Test</div></div>
+      <div class="ff" style="margin:0">
+        <label>Web App URL</label>
+        <input type="text" id="scriptUrl"
+          placeholder="https://script.google.com/macros/s/…/exec"
+          oninput="saveUrl()">
+        <div class="fhint"><code>https://script.google.com/macros/s/…/exec</code></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+        <button class="btn btn-o" onclick="testConn()">🔌 Test Connection</button>
+        <span id="connRes" style="font-size:12px;color:var(--tx3)"></span>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-hd"><div class="step-n">4</div>
+        <div class="step-t">Sync & Export</div></div>
+      <div class="sbtngrp">
+        <button class="btn btn-g" onclick="syncAll()">⬆ Sync All Tables</button>
+        <button class="btn btn-o" onclick="syncActive()">⬆ Sync Active Table</button>
+        <button class="btn btn-o" onclick="importActive()">⬇ Import from Sheet</button>
+      </div>
+      <div style="margin-top:11px;padding-top:11px;border-top:1px solid var(--bdr);">
+        <div style="font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:8px;">Local Export (no setup needed)</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="btn btn-o" onclick="exportCSV()">📄 CSV (active)</button>
+          <button class="btn btn-o" onclick="exportAllCSV()">📦 CSV (all tables)</button>
+          <button class="btn btn-o" onclick="exportJSON()">{ } JSON</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mft">
+      <button class="btn btn-o" onclick="CM('syncModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║                  ⚠  ADMIN CREDENTIALS  ⚠                            ║
+// ╠══════════════════════════════════════════════════════════════════════╣
+// ║  ADMIN 1 → Chiranth Ramesh    password:                              ║
+// ║  ADMIN 2 → Madhushri Kakanaki  password:                 ║
+// ║  ADMIN 3 → Vase Anil  password:                 ║
+// ╠══════════════════════════════════════════════════════════════════════╣
+// ║  VIEWER  →               password: view@2024                        ║
+// ╚══════════════════════════════════════════════════════════════════════╝
+
+const ADMINS = [
+  { name:'Chiranth Ramesh',    initials:'RK', id:'admin001', password:'Raj@Store#2024'    },
+  { name:'Madhushri Kakanaki', initials:'PS', id:'admin002', password:'Priya@Store#2024'  },
+  { name:'Vase Anil', initials:'VA', id:'Anilvasy', password:'10698' },
+];
+const VIEWER_PASS = 'view@2024'; // ⚠ Viewer password
+
+// ─── 6 PREDEFINED TABLES ───────────────────────────────────────────────
+
+function mkT1() {
+  return {
+    id:'tbl1', name:'Main Inventory', icon:'📋',
+    cols:[
+      {id:'slno',  name:'Sl No',              type:'number', req:true},
+      {id:'make',  name:'Make',               type:'text'  },
+      {id:'pdesc', name:'Product Description',type:'text'  },
+      {id:'model', name:'Model / Part No',    type:'text'  },
+      {id:'serno', name:'Serial No',          type:'text'  },
+      {id:'qty',   name:'Qty',                type:'number'},
+      {id:'cond',  name:'Product Condition\n(24 Mar 2025)',type:'condition'},
+      {id:'rem',   name:'Remarks',            type:'text'  },
+      {id:'where', name:'Where is it?',       type:'text'  },
+    ], rows:[]
+  };
+}
+function mkT2() {
+  return {
+    id:'tbl2', name:'M.2 Drives', icon:'💾',
+    cols:[
+      {id:'sn',    name:'SN',                       type:'number', req:true},
+      {id:'make',  name:'M.2 Make',                 type:'text'  },
+      {id:'serial',name:'Serial Number',             type:'text'  },
+      {id:'size',  name:'Size',                      type:'text'  },
+      {id:'type',  name:'Type',                      type:'text'  },
+      {id:'os',    name:'Loaded OS / Content',       type:'text'  },
+    ], rows:[]
+  };
+}
+function mkT3() {
+  return {
+    id:'tbl3', name:'Consumables', icon:'🔧',
+    cols:[
+      {id:'slno',  name:'Sl No',       type:'number', req:true},
+      {id:'cons',  name:'Consumables', type:'text'  },
+      {id:'totqty',name:'Total Qty',   type:'number'},
+      {id:'partno',name:'Part No',     type:'text'  },
+      {id:'size',  name:'Size',        type:'text'  },
+      {id:'avail', name:'Qty Available',type:'number'},
+      {id:'usage', name:'Usage',       type:'text'  },
+    ], rows:[]
+  };
+}
+function mkT4() {
+  return {
+    id:'tbl4', name:'Stock Items', icon:'📦',
+    cols:[
+      {id:'sn',    name:'SN',           type:'number', req:true},
+      {id:'desc',  name:'Description',  type:'text'  },
+      {id:'serial',name:'Serial No',    type:'text'  },
+      {id:'qty',   name:'Qty',          type:'number'},
+      {id:'where', name:'Where is it?', type:'text'  },
+    ], rows:[]
+  };
+}
+function mkT5() {
+  return {
+    id:'tbl5', name:'USB Drives', icon:'🔌',
+    cols:[
+      {id:'sn',      name:'SN',               type:'number', req:true},
+      {id:'brand',   name:'Brand',            type:'text'  },
+      {id:'cap',     name:'Storage Capacity', type:'text'  },
+      {id:'usbver',  name:'USB Version',      type:'text'  },
+      {id:'serial',  name:'Serial Numbers',   type:'text'  },
+      {id:'withwhom',name:'With Whom?',       type:'text'  },
+    ], rows:[]
+  };
+}
+function mkT6() {
+  return {
+    id:'tbl6', name:'OS / Systems', icon:'💻',
+    cols:[
+      {id:'sn',    name:'SN',            type:'number', req:true},
+      {id:'serial',name:'Serial Number', type:'text'  },
+      {id:'oscond',name:'OS Condition',  type:'condition'},
+    ], rows:[]
+  };
+}
+
+// ─── STATE ─────────────────────────────────────────────────────────────
+let S = { user:null, tables:[], activeId:null, filter:'all', editRowId:null };
+let selAdminIdx = 0;
+let curRole = 'admin';
+
+// ─── PERSIST ───────────────────────────────────────────────────────────
+function save() {
+  localStorage.setItem('sv3_tables', JSON.stringify(S.tables));
+  localStorage.setItem('sv3_active', S.activeId||'');
+}
+function load() {
+  try {
+    const t = JSON.parse(localStorage.getItem('sv3_tables')||'null');
+    if (t && t.length) {
+      // Ensure all 6 default tables exist (add if missing)
+      const defaults = [mkT1(),mkT2(),mkT3(),mkT4(),mkT5(),mkT6()];
+      S.tables = t;
+      defaults.forEach(dt => {
+        if (!S.tables.find(x=>x.id===dt.id)) S.tables.unshift(dt);
+      });
+      // Sort: put defaults first by id order
+      const order = ['tbl1','tbl2','tbl3','tbl4','tbl5','tbl6'];
+      S.tables.sort((a,b)=>{
+        const ai=order.indexOf(a.id), bi=order.indexOf(b.id);
+        if(ai>-1&&bi>-1) return ai-bi;
+        if(ai>-1) return -1;
+        if(bi>-1) return 1;
+        return 0;
+      });
+    } else {
+      S.tables = [mkT1(),mkT2(),mkT3(),mkT4(),mkT5(),mkT6()];
+    }
+    S.activeId = localStorage.getItem('sv3_active') || S.tables[0].id;
+  } catch(e) {
+    S.tables = [mkT1(),mkT2(),mkT3(),mkT4(),mkT5(),mkT6()];
+  }
+}
+
+// ─── LOGIN ──────────────────────────────────────────────────────────────
+function switchRole(role) {
+  curRole = role;
+  document.getElementById('rtab-admin').className='rtab'+(role==='admin'?' active':'');
+  document.getElementById('rtab-viewer').className='rtab'+(role==='viewer'?' active':'');
+  document.getElementById('adminPanel').style.display = role==='admin'?'block':'none';
+  document.getElementById('viewerPanel').style.display = role==='viewer'?'block':'none';
+  document.getElementById('loginErr').style.display='none';
+  document.getElementById('loginErrV').style.display='none';
+}
+function pickAdmin(idx) {
+  selAdminIdx = idx;
+  document.querySelectorAll('.acard').forEach((c,i)=>{
+    c.className='acard'+(i===idx?' active':'');
+  });
+  document.getElementById('adminPass').value='';
+  document.getElementById('adminPass').focus();
+}
+function doLogin() {
+  if (curRole==='admin') {
+    const adm = ADMINS[selAdminIdx];
+    const pass = document.getElementById('adminPass').value;
+    if (pass !== adm.password) {
+      document.getElementById('loginErr').style.display='block'; return;
+    }
+    document.getElementById('loginErr').style.display='none';
+    S.user = { name:adm.name, id:adm.id, role:'admin' };
+  } else {
+    const pass = document.getElementById('viewerPass').value;
+    if (pass !== VIEWER_PASS) {
+      document.getElementById('loginErrV').style.display='block'; return;
+    }
+    document.getElementById('loginErrV').style.display='none';
+    S.user = { name:'Viewer', id:'viewer', role:'viewer' };
+  }
+  load(); showApp();
+}
+function doLogout() {
+  S.user=null;
+  document.getElementById('adminPass').value='';
+  document.getElementById('viewerPass').value='';
+  document.getElementById('appPage').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+  switchRole('admin'); pickAdmin(0);
+}
+const isAdmin=()=>S.user?.role==='admin';
+
+// ─── SHOW APP ───────────────────────────────────────────────────────────
+function showApp() {
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('appPage').style.display='flex';
+  document.getElementById('tuname').textContent=S.user.name;
+  const b=document.getElementById('tubadge');
+  b.textContent=S.user.role.toUpperCase();
+  b.className='tubadge '+(isAdmin()?'ba':'bv');
+  document.getElementById('btnNewTable').style.display=isAdmin()?'flex':'none';
+  document.getElementById('vnotice').style.display=isAdmin()?'none':'flex';
+  const url=localStorage.getItem('sv3_url')||'';
+  document.getElementById('scriptUrl').value=url;
+  updateSyncUI(!!url);
+  renderSidebar();
+  selectTable(S.activeId||S.tables[0]?.id);
+}
+
+// ─── SIDEBAR ────────────────────────────────────────────────────────────
+function renderSidebar() {
+  document.getElementById('sidebarList').innerHTML=S.tables.map(t=>`
+    <div class="ti ${t.id===S.activeId?'active':''}" onclick="selectTable('${t.id}')">
+      <span class="ti-icon">${t.icon}</span>
+      <span class="ti-name">${t.name}</span>
+      <span class="ti-cnt">${t.rows.length}</span>
+    </div>`).join('');
+}
+
+// ─── SELECT TABLE ────────────────────────────────────────────────────────
+function selectTable(id) {
+  if(!id) return;
+  S.activeId=id; const t=at(); if(!t) return;
+  save(); renderSidebar();
+  document.getElementById('atIcon').textContent=t.icon+' ';
+  document.getElementById('atName').textContent=t.name;
+  document.getElementById('atSub').textContent=`${t.rows.length} rows · ${t.cols.length} columns`;
+  document.getElementById('adminActs').style.display=isAdmin()?'flex':'none';
+  document.getElementById('viewerActs').style.display=isAdmin()?'none':'flex';
+  document.getElementById('statsbar').style.display='flex';
+  document.getElementById('toolbar').style.display='flex';
+  document.getElementById('searchInput').value='';
+  S.filter='all';
+  // Show status filter only if table has a status/condition col
+  const hasFilter=t.cols.some(c=>c.type==='status');
+  document.getElementById('filterPills').style.display=hasFilter?'flex':'none';
+  document.querySelectorAll('.pill').forEach(p=>p.className='pill');
+  if(document.querySelector('.pill')) document.querySelector('.pill').className='pill pa';
+  renderTable();
+}
+const at=()=>S.tables.find(t=>t.id===S.activeId);
+
+// ─── RENDER TABLE ────────────────────────────────────────────────────────
+function condBadge(v) {
+  if(!v) return '<span style="color:var(--tx3)">—</span>';
+  const vl=v.toLowerCase();
+  if(vl.includes('good')||vl.includes('working')||vl.includes('ok')||vl.includes('new'))
+    return `<span class="sbadge sb-good"><span class="sdotb"></span>${v}</span>`;
+  if(vl.includes('fair')||vl.includes('average')||vl.includes('used'))
+    return `<span class="sbadge sb-fair"><span class="sdotb"></span>${v}</span>`;
+  if(vl.includes('poor')||vl.includes('bad')||vl.includes('damage')||vl.includes('broken'))
+    return `<span class="sbadge sb-poor"><span class="sdotb"></span>${v}</span>`;
+  return `<span class="sbadge sb-ok"><span class="sdotb"></span>${v}</span>`;
+}
+function statusBadge(v) {
+  if(!v) return '<span style="color:var(--tx3)">—</span>';
+  const cls=v==='In Stock'?'sb-in':v==='Out of Stock'?'sb-out':v==='Low Stock'?'sb-low':'sb-ok';
+  return `<span class="sbadge ${cls}"><span class="sdotb"></span>${v}</span>`;
+}
+
+function renderTable() {
+  const t=at(); if(!t) return;
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const sc=t.cols.find(c=>c.type==='status');
+  let rows=t.rows.filter(row=>{
+    if(sc&&S.filter!=='all'&&(row[sc.id]||'')!==S.filter) return false;
+    if(q) return t.cols.some(c=>String(row[c.id]||'').toLowerCase().includes(q));
+    return true;
+  });
+  const all=t.rows;
+  document.getElementById('stTotal').textContent=all.length;
+  document.getElementById('stIn').textContent=sc?all.filter(r=>r[sc.id]==='In Stock').length:'—';
+  document.getElementById('stLow').textContent=sc?all.filter(r=>r[sc.id]==='Low Stock').length:'—';
+  document.getElementById('stOut').textContent=sc?all.filter(r=>r[sc.id]==='Out of Stock').length:'—';
+  document.getElementById('atSub').textContent=`${t.rows.length} rows · ${t.cols.length} columns`;
+
+  if(!all.length) {
+    document.getElementById('tableWrap').innerHTML=`<div class="empty">
+      <div class="empty-icon">${t.icon}</div><h3>No rows yet</h3>
+      <p>${isAdmin()?'Click "+ Add Row" to add your first entry.':'No data in this table yet.'}</p>
+    </div>`; return;
+  }
+  if(!rows.length) {
+    document.getElementById('tableWrap').innerHTML=`<div class="empty">
+      <div class="empty-icon">🔍</div><h3>No results</h3>
+      <p>Nothing matches your search or filter.</p>
+    </div>`; return;
+  }
+  const ac=isAdmin()?`<th style="text-align:right;padding-right:14px">Actions</th>`:'';
+  const hdrs=t.cols.map(c=>`<th style="white-space:pre-line">${c.name}</th>`).join('');
+  const body=rows.map((row,i)=>{
+    const cells=t.cols.map(col=>{
+      const v=row[col.id]??'';
+      if(col.type==='condition') return `<td>${condBadge(String(v))}</td>`;
+      if(col.type==='status') return `<td>${statusBadge(String(v))}</td>`;
+      if(col.type==='number'&&v!=='') return `<td style="font-family:var(--mono);font-size:12px">${Number(v).toLocaleString('en-IN')}</td>`;
+      return `<td class="ct" title="${String(v).replace(/"/g,'&quot;')}">${v||'<span style="color:var(--tx3)">—</span>'}</td>`;
+    }).join('');
+    const act=isAdmin()?`<td><div class="acts">
+      <button class="abt e" onclick="openEditRow('${row._id}')" title="Edit">✏</button>
+      <button class="abt d" onclick="deleteRow('${row._id}')" title="Delete">🗑</button>
+    </div></td>`:'';
+    return `<tr><td class="rn">${i+1}</td>${cells}${act}</tr>`;
+  }).join('');
+  document.getElementById('tableWrap').innerHTML=`<table>
+    <thead><tr><th>#</th>${hdrs}${ac}</tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+
+// ─── FILTER ──────────────────────────────────────────────────────────────
+function setFilter(val,el) {
+  S.filter=val;
+  document.querySelectorAll('.pill').forEach(p=>p.className='pill');
+  const m={all:'pa','In Stock':'pi','Low Stock':'pl','Out of Stock':'po'};
+  el.className=`pill ${m[val]||'pa'}`;
+  renderTable();
+}
+
+// ─── ROW CRUD ────────────────────────────────────────────────────────────
+const uid=()=>'r'+Date.now()+Math.random().toString(36).slice(2,6);
+
+function buildForm(row=null) {
+  const t=at();
+  return t.cols.map(col=>{
+    const v=row?(row[col.id]??''):'';
+    let inp;
+    if(col.type==='condition') {
+      inp=`<select id="rf_${col.id}">
+        <option value="">— Select —</option>
+        <option ${v==='Good'?'selected':''}>Good</option>
+        <option ${v==='Working'?'selected':''}>Working</option>
+        <option ${v==='Fair'?'selected':''}>Fair</option>
+        <option ${v==='Poor'?'selected':''}>Poor</option>
+        <option ${v==='Damaged'?'selected':''}>Damaged</option>
+        <option value="${v}" ${v&&!['Good','Working','Fair','Poor','Damaged'].includes(v)?'selected':''}>${v&&!['Good','Working','Fair','Poor','Damaged'].includes(v)?v:''}</option>
+      </select>`;
+    } else if(col.type==='status') {
+      inp=`<select id="rf_${col.id}">
+        <option value="">— Select —</option>
+        <option ${v==='In Stock'?'selected':''}>In Stock</option>
+        <option ${v==='Low Stock'?'selected':''}>Low Stock</option>
+        <option ${v==='Out of Stock'?'selected':''}>Out of Stock</option>
+      </select>`;
+    } else if(col.type==='number') {
+      inp=`<input type="number" id="rf_${col.id}" value="${v}" placeholder="0" step="any">`;
+    } else if(col.type==='date') {
+      inp=`<input type="date" id="rf_${col.id}" value="${v}">`;
+    } else {
+      inp=`<input type="text" id="rf_${col.id}" value="${String(v).replace(/"/g,'&quot;')}" placeholder="${col.name.replace(/\n/g,' ')}…">`;
+    }
+    return `<div class="ff"><label>${col.name.replace(/\n/g,' ')}${col.req?' *':''}</label>${inp}</div>`;
+  }).join('');
+}
+
+function openAddRow() {
+  S.editRowId=null;
+  document.getElementById('rowMT').textContent='Add New Row';
+  document.getElementById('saveRowBtn').textContent='Add Row';
+  document.getElementById('rowFields').innerHTML=buildForm();
+  OM('rowModal');
+}
+function openEditRow(rid) {
+  const t=at(); const row=t.rows.find(r=>r._id===rid); if(!row) return;
+  S.editRowId=rid;
+  document.getElementById('rowMT').textContent='Edit Row';
+  document.getElementById('saveRowBtn').textContent='Save Changes';
+  document.getElementById('rowFields').innerHTML=buildForm(row);
+  OM('rowModal');
+}
+function saveRow() {
+  const t=at();
+  const data={_id:S.editRowId||uid()};
+  t.cols.forEach(col=>{
+    const el=document.getElementById('rf_'+col.id);
+    if(el) data[col.id]=el.value;
+  });
+  const rc=t.cols.find(c=>c.req);
+  if(rc&&!data[rc.id]) { toast('First field is required','e'); return; }
+  if(S.editRowId) {
+    const i=t.rows.findIndex(r=>r._id===S.editRowId);
+    if(i>-1) t.rows[i]=data;
+    toast('Updated ✓','s');
+  } else {
+    t.rows.push(data);
+    toast('Row added ✓','s');
+  }
+  save(); CM('rowModal'); renderTable(); renderSidebar();
+}
+function deleteRow(rid) {
+  if(!confirm('Delete this row?')) return;
+  const t=at(); t.rows=t.rows.filter(r=>r._id!==rid);
+  save(); renderTable(); renderSidebar(); toast('Deleted','i');
+}
+
+// ─── TABLE MGMT ─────────────────────────────────────────────────────────
+function openAddTableModal() {
+  document.getElementById('ntName').value='';
+  document.getElementById('ntIcon').value='📦';
+  OM('addTableModal');
+  setTimeout(()=>document.getElementById('ntName').focus(),100);
+}
+function createTable() {
+  const name=document.getElementById('ntName').value.trim();
+  const icon=document.getElementById('ntIcon').value.trim()||'📦';
+  if(!name){toast('Enter table name','e');return;}
+  const id='t'+uid();
+  S.tables.push({id,name,icon,cols:[
+    {id:'c_sn',name:'SN',type:'number',req:true},
+    {id:'c_name',name:'Name',type:'text'},
+    {id:'c_qty',name:'Qty',type:'number'},
+    {id:'c_notes',name:'Notes',type:'text'},
+  ],rows:[]});
+  save(); CM('addTableModal'); renderSidebar(); selectTable(id);
+  toast(`"${name}" created`,'s');
+}
+function openRenameModal() {
+  const t=at();
+  document.getElementById('rnName').value=t.name;
+  document.getElementById('rnIcon').value=t.icon;
+  OM('renameModal');
+  setTimeout(()=>document.getElementById('rnName').focus(),100);
+}
+function doRenameTable() {
+  const name=document.getElementById('rnName').value.trim();
+  const icon=document.getElementById('rnIcon').value.trim()||'📦';
+  if(!name){toast('Enter a name','e');return;}
+  const t=at(); t.name=name; t.icon=icon;
+  save(); CM('renameModal'); renderSidebar();
+  document.getElementById('atName').textContent=name;
+  document.getElementById('atIcon').textContent=icon+' ';
+  toast('Renamed','s');
+}
+function deleteActiveTable() {
+  const t=at();
+  if(S.tables.length<=1){toast('Cannot delete last table','e');return;}
+  if(!confirm(`Delete "${t.name}" and ALL its data?`)) return;
+  S.tables=S.tables.filter(x=>x.id!==t.id);
+  S.activeId=S.tables[0].id;
+  save(); renderSidebar(); selectTable(S.activeId); toast('Table deleted','i');
+}
+
+// ─── COLUMN MGMT ────────────────────────────────────────────────────────
+function openManageCols() { renderColList(); OM('colsModal'); }
+function renderColList() {
+  const t=at();
+  document.getElementById('colList').innerHTML=t.cols.map(col=>`
+    <div class="ci">
+      <span class="ci-name">${col.name.replace(/\n/g,' ')}</span>
+      <span class="ci-type">${col.type}</span>
+      ${!col.req?`<button class="cdel" onclick="delCol('${col.id}')">✕</button>`
+        :'<span style="font-size:10px;color:var(--tx3)">key</span>'}
+    </div>`).join('');
+}
+function addCol() {
+  const name=document.getElementById('ncName').value.trim();
+  const type=document.getElementById('ncType').value;
+  if(!name){toast('Enter column name','e');return;}
+  const t=at(); t.cols.push({id:'c'+uid(),name,type});
+  document.getElementById('ncName').value='';
+  save(); renderColList(); toast(`"${name}" added`,'s');
+}
+function delCol(cid) {
+  const t=at(); const col=t.cols.find(c=>c.id===cid);
+  if(!confirm(`Delete column "${col.name.replace(/\n/g,' ')}"?`)) return;
+  t.cols=t.cols.filter(c=>c.id!==cid);
+  save(); renderColList(); toast('Column removed','i');
+}
+
+// ─── SYNC ───────────────────────────────────────────────────────────────
+const GS_CODE=`// ═══════════════════════════════════════════════════
+//  StoreVault — Google Apps Script Backend
+//  1. Extensions → Apps Script → paste this → Save
+//  2. Deploy → New Deployment → Web App
+//     Execute as: Me | Who has access: Anyone
+//  3. Copy Web App URL → paste into StoreVault Sync
+// ═══════════════════════════════════════════════════
+
+const SPREADSHEET_ID = '1zRJD8cwZuX8BtSj3wJbSNVYfheaFGr2Zqta-XDx7Bio';
+
+function corsResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = e.parameter.sheet;
+    if (!sheet) return corsResponse({ ok:true, sheets:ss.getSheets().map(s=>s.getName()) });
+    const tab = ss.getSheetByName(sheet);
+    if (!tab) return corsResponse({ ok:false, error:'Sheet not found: '+sheet });
+    const vals = tab.getDataRange().getValues();
+    if (vals.length < 1) return corsResponse({ ok:true, headers:[], rows:[] });
+    const headers = vals[0].map(String);
+    const rows = vals.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((h,i) => obj[h] = String(row[i]??''));
+      return obj;
+    });
+    return corsResponse({ ok:true, headers, rows });
+  } catch(err) { return corsResponse({ ok:false, error:err.message }); }
+}
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    if (body.action==='ping') return corsResponse({ ok:true, message:'Connected to StoreVault ✓' });
+    if (body.action==='sync') {
+      const { sheetName, headers, rows } = body;
+      let tab = ss.getSheetByName(sheetName);
+      if (!tab) tab = ss.insertSheet(sheetName);
+      else tab.clearContents();
+      const vals = [headers, ...rows];
+      if (vals.length && headers.length) {
+        tab.getRange(1,1,vals.length,headers.length).setValues(vals);
+        tab.getRange(1,1,1,headers.length)
+          .setBackground('#F59E0B').setFontColor('#000').setFontWeight('bold');
+        tab.setFrozenRows(1);
+        tab.autoResizeColumns(1, headers.length);
+      }
+      return corsResponse({ ok:true, message:'Synced "'+sheetName+'" — '+rows.length+' rows' });
+    }
+    if (body.action==='delete_sheet') {
+      const tab = ss.getSheetByName(body.sheetName);
+      if (tab) ss.deleteSheet(tab);
+      return corsResponse({ ok:true });
+    }
+    return corsResponse({ ok:false, error:'Unknown action' });
+  } catch(err) { return corsResponse({ ok:false, error:err.message }); }
+}`;
+
+const getUrl=()=>(localStorage.getItem('sv3_url')||'').trim();
+function saveUrl() {
+  const u=document.getElementById('scriptUrl').value.trim();
+  localStorage.setItem('sv3_url',u); updateSyncUI(!!u);
+}
+function updateSyncUI(on) {
+  document.getElementById('sdot').className='sdot'+(on?' on':'');
+  document.getElementById('stxt').textContent=on?'Sheets: Connected':'Sheets: Not set up';
+}
+async function scriptPost(payload) {
+  const url=getUrl();
+  if(!url) throw new Error('No Apps Script URL set.');
+  const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(payload)});
+  const data=await res.json();
+  if(!data.ok) throw new Error(data.error||'Error');
+  return data;
+}
+async function testConn() {
+  const el=document.getElementById('connRes');
+  el.textContent='Testing…'; el.style.color='var(--tx3)';
+  try {
+    const d=await scriptPost({action:'ping'});
+    el.style.color='var(--grn)'; el.textContent='✓ '+d.message;
+    updateSyncUI(true); toast('Connected!','s');
+  } catch(e) {
+    el.style.color='var(--red)'; el.textContent='✗ '+e.message; toast('Failed: '+e.message,'e');
+  }
+}
+async function push(t) {
+  const headers=t.cols.map(c=>c.name.replace(/\n/g,' '));
+  const rows=t.rows.map(row=>t.cols.map(c=>String(row[c.id]??'')));
+  return scriptPost({action:'sync',sheetName:t.name,headers,rows});
+}
+async function quickSync() {
+  const t=at(); if(!t) return;
+  if(!getUrl()){openSyncModal();toast('Set Apps Script URL first','i');return;}
+  toast(`Syncing "${t.name}"…`,'i');
+  try { const d=await push(t); toast('✓ '+d.message,'s'); }
+  catch(e) { toast('Failed: '+e.message,'e'); }
+}
+async function syncAll() {
+  if(!getUrl()){toast('Set Apps Script URL first','e');return;}
+  toast(`Syncing ${S.tables.length} tables…`,'i');
+  let ok=0,fail=0;
+  for(const t of S.tables){try{await push(t);ok++;}catch(e){fail++;}}
+  toast(fail?`${ok} ok, ${fail} failed`:`✓ All ${ok} tables synced`,fail?'e':'s');
+}
+async function syncActive() {
+  const t=at(); if(!t) return;
+  if(!getUrl()){toast('Set Apps Script URL first','e');return;}
+  toast(`Syncing "${t.name}"…`,'i');
+  try { const d=await push(t); toast('✓ '+d.message,'s'); }
+  catch(e) { toast('Failed: '+e.message,'e'); }
+}
+async function importActive() {
+  const t=at(); if(!t) return;
+  if(!getUrl()){toast('Set Apps Script URL first','e');return;}
+  toast(`Importing "${t.name}"…`,'i');
+  try {
+    const res=await fetch(getUrl()+'?sheet='+encodeURIComponent(t.name));
+    const data=await res.json();
+    if(!data.ok) throw new Error(data.error);
+    if(!data.rows?.length){toast('No data found in sheet tab','i');return;}
+    if(!confirm(`Replace ${t.rows.length} local rows with ${data.rows.length} from Sheets?`)) return;
+    t.rows=data.rows.map(obj=>({
+      _id:uid(),
+      ...Object.fromEntries(t.cols.map(c=>[c.id,obj[c.name.replace(/\n/g,' ')]??'']))
+    }));
+    save(); renderTable(); renderSidebar(); toast(`✓ Imported ${t.rows.length} rows`,'s');
+  } catch(e) { toast('Import failed: '+e.message,'e'); }
+}
+function openSyncModal() {
+  document.getElementById('scriptUrl').value=getUrl();
+  document.getElementById('connRes').textContent='';
+  OM('syncModal');
+}
+function downloadGS() {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([GS_CODE],{type:'text/plain'}));
+  a.download='storevault-apps-script.gs'; a.click();
+  toast('Script downloaded','s');
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────
+function toCSV(t) {
+  const h=t.cols.map(c=>`"${c.name.replace(/\n/g,' ')}"`).join(',');
+  const rows=t.rows.map(r=>t.cols.map(c=>`"${String(r[c.id]??'').replace(/"/g,'""')}"`).join(','));
+  return [h,...rows].join('\n');
+}
+function dl(content,fn,mime='text/csv') {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=fn; a.click();
+}
+function exportCSV() {
+  const t=at(); if(!t) return;
+  dl(toCSV(t),t.name.replace(/\s+/g,'_')+'.csv');
+  toast('Downloaded CSV','s');
+}
+function exportAllCSV() {
+  S.tables.forEach((t,i)=>setTimeout(()=>dl(toCSV(t),t.name.replace(/\s+/g,'_')+'.csv'),i*250));
+  toast('Downloading all CSVs…','s');
+}
+function exportJSON() {
+  const t=at(); if(!t) return;
+  dl(JSON.stringify({table:t.name,cols:t.cols.map(c=>c.name.replace(/\n/g,' ')),rows:t.rows},null,2),
+    t.name.replace(/\s+/g,'_')+'.json','application/json');
+  toast('Downloaded JSON','s');
+}
+
+// ─── MODAL HELPERS ────────────────────────────────────────────────────────
+const OM=id=>document.getElementById(id).classList.add('open');
+const CM=id=>document.getElementById(id).classList.remove('open');
+document.querySelectorAll('.mover').forEach(o=>o.addEventListener('click',e=>{
+  if(e.target===o) o.classList.remove('open');
+}));
+
+// ─── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg,type='i') {
+  const el=document.createElement('div');
+  el.className=`toast t${type}`;
+  el.innerHTML=`<span>${type==='s'?'✓':type==='e'?'✕':'ℹ'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>el.remove(),3200);
+}
+
+// ─── KEYBOARD ──────────────────────────────────────────────────────────
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape') document.querySelectorAll('.mover.open').forEach(m=>m.classList.remove('open'));
+  if(e.key==='n'&&isAdmin()&&!document.querySelector('.mover.open')&&S.activeId) openAddRow();
+});
+</script>
+</body>
+</html>
